@@ -4,53 +4,33 @@ npx tree-node-cli -I "node_modules|.git|playwright-report|test-results" -o proje
 npx tree-node-cli -I "node_modules|dist|.git|playwright-report|test-results" -o proje-yapisi.txt
 PS C:\Users\user\WebstormProjects\playwright-vanilla99> npx tree-node-cli -I "node_modules|dist|.git|playwright-report|test-results" -o proje-yapisi.txt
 
-'''
+## 📁 Proje Yapısı
+
+```text
 playwright-vanilla99
 ├── Alumni
-│   ├── InstuLearn
-│   │   ├── AllRunner.spec.ts
-│   │   ├── US0023CreateCourse.spec.ts
+│   ├── Loyal
+│   │   ├── US001LylRegisterTest.spec.ts
 │   │   ├── US002VerifyUrl.spec.ts
-│   │   ├── US003VerfiyButton.spec.ts
-│   │   ├── US004UpLoadFile.spec.ts
-│   │   ├── US005RandomTest.spec.ts
-│   │   ├── US006CreateMetting.spec.ts
-│   │   ├── US0024ReserveMeetings.spec.ts
-│   │   └── US004DynamicRegister.spec.ts
+│   │   ├── US003ArrayList.spec.ts
+│   │   ├── US004FromArrayListgetElelemt.spec.ts
+│   │   └── US005ProductsList.spec.ts
 │   └── Student
-│       ├── US001LylRegisterTest.spec.ts
-│       ├── US002Dataprovider.spec.ts
-│       ├── US003ArrayList.spec.ts
-│       ├── US004FromArrayListgetElelemt.spec.ts
-│       └── US005ProductsList.spec.ts
-├── Documents
-│   ├── Komutlar.txt
-│   ├── KurulumAdimlari.txt
-│   ├── accounInfo.txt
-│   ├── accountStorage
-│   │   └── registered_accounts.txt
-│   ├── assets
-│   │   ├── math1.png
-│   │   └── math2.png
-│   ├── entresan.txt
-│   ├── locateAyarlama.txt
-│   ├── mathrandom.txt
-│   ├── methodGelistirme.txt
-│   ├── pathJoin.txt
-│   ├── projeAgaci.txt
-│   ├── testdenemesi.txt
-│   └── vanillaTagRunner.txt
+│       ├── US0023CreateCourse.spec.ts
+│       ├── US0024ReserveMeetings.spec.ts
+│       └── US004DynamicRegister.spec.ts
 ├── LoyalFriendCare.bat
 ├── Readme.md
 ├── VanillaRunner.ts
 ├── cucumber.json
 ├── example.env
-├── logs
-│   └── execution.log
+├── general-scripts.ts
+├── generate-tree.ts
 ├── package-lock.json
 ├── package.json
 ├── playwright.config.ts
 ├── qa-testing-sites.bat
+├── runnerScipts.ts
 ├── setUp.bat
 ├── src
 │   ├── main
@@ -78,7 +58,8 @@ playwright-vanilla99
 │       │   ├── AdminRunner.ts
 │       │   ├── CucumberTagRunner.ts
 │       │   ├── StudentRunner.ts
-│       │   └── TestRunner.ts
+│       │   ├── TestRunner.ts
+│       │   └── fromScript.ts
 │       ├── features
 │       │   ├── Admin
 │       │   │   └── US004DynamicRegister.feature
@@ -98,11 +79,12 @@ playwright-vanilla99
 │           ├── StudentSteps.ts
 │           ├── VisitorSteps.ts
 │           └── hooks.ts
-├── target
-│   └── reports
-│       └── cucumber-report.html
 └── tsconfig.json
-'''
+```
+
+---
+
+
 
 
 
