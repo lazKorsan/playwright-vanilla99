@@ -20,13 +20,13 @@ Aşağıda projenin kurulumu, test yazımı ve yardımcı araçların kullanım�
       <a href="https://www.youtube.com/watch?v=7omwYDPrCkQ&t=1588s" target="_blank">
         <img src="https://img.youtube.com/vi/8u59BXHuz_c/hqdefault.jpg" alt="Team 169 UI Page, Steps ve Feature Dosyasi olusturma" style="max-width:320px;width:100%;height:auto;">
       </a><br/>
-      <sub><b>Team 169 UI Page, Steps ve Feature Dosyasi olusturma</b></sub>
+      <sub><b>Playwright TypeScript native test</b></sub>
     </td>
     <td align="center">
       <a href="https://www.youtube.com/watch?v=_qODebxx7Ts" target="_blank">
         <img src="https://img.youtube.com/vi/ulyYLlUVMDM/hqdefault.jpg" alt="Team 169 ConfigReader Kullanimi" style="max-width:320px;width:100%;height:auto;">
       </a><br/>
-      <sub><b>Team 169 ConfigReader Kullanimi</b></sub>
+      <sub><b>Playwright TypeScript projenin github a yuklenmesi.</b></sub>
     </td>
   </tr>
 
@@ -35,19 +35,19 @@ Aşağıda projenin kurulumu, test yazımı ve yardımcı araçların kullanım�
       <a href="https://www.youtube.com/watch?v=btd2-_thA8c" target="_blank">
         <img src="https://img.youtube.com/vi/mLd7xsdqsAs/hqdefault.jpg" alt="EnumList Hazir Sablon Olusturma" style="max-width:320px;width:100%;height:auto;">
       </a><br/>
-      <sub><b>EnumList Hazir Sablon Olusturma</b></sub>
+      <sub><b>Playwright TypeScript framework Cucumber eklenmesi, feature ve step dosyalarinin olusturulmasi</b></sub>
     </td>
     <td align="center">
       <a href="https://www.youtube.com/watch?v=aVBnZf6uhFc" target="_blank">
         <img src="https://img.youtube.com/vi/hccqO8w6hzo/hqdefault.jpg" alt="UI Framework İlk Testim" style="max-width:320px;width:100%;height:auto;">
       </a><br/>
-      <sub><b>UI Framework İlk Testim</b></sub>
+      <sub><b>Playwright TypeScript Cucumber Testlerinin kosulmasi</b></sub>
     </td>
     <td align="center">
       <a href="https://www.youtube.com/watch?v=ra-aSWqZ3aM&t=16s" target="_blank">
         <img src="https://img.youtube.com/vi/47r2AMjFUpE/hqdefault.jpg" alt="UI Modern Loglam (LoginPlugin Kullanimi)" style="max-width:320px;width:100%;height:auto;">
       </a><br/>
-      <sub><b>UI Modern Loglam (LoginPlugin Kullanimi)</b></sub>
+      <sub><b>Çok katmanlı test framework'üne Playwright TypeScript UI projesi eklenmesi</b></sub>
     </td>
   </tr>
 
