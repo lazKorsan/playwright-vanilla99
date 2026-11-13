@@ -19,19 +19,6 @@ playwright-vanilla99
 │       ├── US0023CreateCourse.spec.ts
 │       ├── US0024ReserveMeetings.spec.ts
 │       └── US004DynamicRegister.spec.ts
-├── LoyalFriendCare.bat
-├── Readme.md
-├── VanillaRunner.ts
-├── cucumber.json
-├── example.env
-├── general-scripts.ts
-├── generate-tree.ts
-├── package-lock.json
-├── package.json
-├── playwright.config.ts
-├── qa-testing-sites.bat
-├── runnerScipts.ts
-├── setUp.bat
 ├── src
 │   ├── main
 │   │   ├── pages
@@ -79,6 +66,20 @@ playwright-vanilla99
 │           ├── StudentSteps.ts
 │           ├── VisitorSteps.ts
 │           └── hooks.ts
+├── LoyalFriendCare.bat
+├── Readme.md
+├── VanillaRunner.ts
+├── cucumber.json
+├── example.env
+├── general-scripts.ts
+├── generate-tree.ts
+├── package-lock.json
+├── package.json
+├── playwright.config.ts
+├── qa-testing-sites.bat
+├── runnerScipts.ts
+├── setUp.bat
+
 └── tsconfig.json
 ```
 
