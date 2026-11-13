@@ -7,14 +7,14 @@ playwright-vanilla99
 ├── Alumni
 │   ├── InstuLearn
 │   │   ├── AllRunner.spec.ts
-│   │   ├── US001VerifyTitle.spec.ts
+│   │   ├── US0023CreateCourse.spec.ts
 │   │   ├── US002VerifyUrl.spec.ts
 │   │   ├── US003VerfiyButton.spec.ts
 │   │   ├── US004UpLoadFile.spec.ts
 │   │   ├── US005RandomTest.spec.ts
 │   │   ├── US006CreateMetting.spec.ts
-│   │   ├── US007DynamicTest.spec.ts
-│   │   └── US008DynamicRegister.spec.ts
+│   │   ├── US0024ReserveMeetings.spec.ts
+│   │   └── US004DynamicRegister.spec.ts
 │   └── Student
 │       ├── US001LylRegisterTest.spec.ts
 │       ├── US002Dataprovider.spec.ts

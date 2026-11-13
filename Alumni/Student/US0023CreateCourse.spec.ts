@@ -15,7 +15,7 @@ test('Us0023CreateCourse Step1', async ({page}) => {
     await page.getByRole('link', {name: 'Login'}).click();
 
     //EmailBox
-    await page.getByRole('textbox', {name: 'Email:'}).fill('ahmet486@InstuLearn.com');
+    await page.getByRole('textbox', {name: 'Email:'}).fill('ahmet486@Loyal.com');
 
     // passwordBox
     await page.getByRole('textbox', {name: 'Password:'}).fill('Query.2026!');
@@ -140,47 +140,7 @@ test('Login denemesi', async ({page}) => {
 });
 
 
-test('test', async ({page}) => {
-    await page.goto('https://qa.instulearn.com/');
-    await page.getByRole('link', {name: 'Register'}).click();
-    await page.getByText('Instructor', {exact: true}).click();
-    await page.getByText('Instructor', {exact: true}).check();
-    await page.getByRole('textbox', {name: 'Email :'}).click();
-    await page.getByRole('textbox', {name: 'Email :'}).fill('email');
-    await page.getByRole('textbox', {name: 'Email :'}).press('CapsLock');
-    await page.getByRole('textbox', {name: 'Email :'}).fill('emailB');
-    await page.getByRole('textbox', {name: 'Email :'}).press('CapsLock');
-    await page.getByRole('textbox', {name: 'Email :'}).fill('emailBox');
-    await page.getByRole('textbox').nth(2).click();
-    await page.getByRole('textbox').nth(2).fill('full');
-    await page.getByRole('textbox').nth(2).press('CapsLock');
-    await page.getByRole('textbox').nth(2).fill('fullN');
-    await page.getByRole('textbox').nth(2).press('CapsLock');
-    await page.getByRole('textbox').nth(2).fill('fullName');
-    await page.getByRole('textbox').nth(2).press('CapsLock');
-    await page.getByRole('textbox').nth(2).fill('fullNameB');
-    await page.getByRole('textbox').nth(2).press('CapsLock');
-    await page.getByRole('textbox').nth(2).fill('fullNameBox');
-    await page.getByRole('textbox', {name: 'Password:', exact: true}).click();
-    await page.getByRole('textbox', {name: 'Password:', exact: true}).fill('password');
-    await page.getByRole('textbox', {name: 'Password:', exact: true}).press('CapsLock');
-    await page.getByRole('textbox', {name: 'Password:', exact: true}).fill('passwordB');
-    await page.getByRole('textbox', {name: 'Password:', exact: true}).press('CapsLock');
-    await page.getByRole('textbox', {name: 'Password:', exact: true}).fill('passwordBox');
-    await page.getByRole('textbox', {name: 'Retype Password:'}).click();
-    await page.getByRole('textbox', {name: 'Retype Password:'}).fill('confir');
-    await page.getByRole('textbox', {name: 'Retype Password:'}).press('CapsLock');
-    await page.getByRole('textbox', {name: 'Retype Password:'}).fill('confirP');
-    await page.getByRole('textbox', {name: 'Retype Password:'}).press('CapsLock');
-    await page.getByRole('textbox', {name: 'Retype Password:'}).fill('confirPassword');
-    await page.getByRole('textbox', {name: 'Retype Password:'}).press('CapsLock');
-    await page.getByRole('textbox', {name: 'Retype Password:'}).fill('confirPasswordB');
-    await page.getByRole('textbox', {name: 'Retype Password:'}).press('CapsLock');
-    await page.getByRole('textbox', {name: 'Retype Password:'}).fill('confirPasswordBoz');
-    await page.getByText('I agree with terms & rules').click();
-    await page.getByRole('checkbox', {name: 'I agree with terms & rules'}).check();
-    await page.getByRole('button', {name: 'Signup'}).click();
-});
+
 
 
 
