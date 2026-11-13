@@ -1,0 +1,52 @@
+{
+  "default": {
+    "paths": ["src/tests/features/**/*.feature"],
+    "require": [
+      "dotenv/config",
+      "src/tests/step-definitions/**/*.ts"
+    ],
+    "requireModule": ["tsconfig-paths/register", "ts-node/register"],
+    "format": [
+      "progress",
+      "html:target/reports/cucumber-report.html",
+      "allure-cucumberjs/reporter"
+    ],
+    "formatOptions": {
+      "resultsDir": "target/allure-results"
+    }
+  },
+  "smoke": {
+    "paths": ["src/tests/features/**/*.feature"],
+    "require": ["dotenv/config", "src/tests/step-definitions/**/*.ts"],
+    "requireModule": ["tsconfig-paths/register", "ts-node/register"],
+    "tags": "@smoke",
+    "format": [
+      "progress",
+      "html:target/reports/smoke-report.html",
+      "allure-cucumberjs/reporter"
+    ],
+    "formatOptions": {
+      "resultsDir": "target/allure-results"
+    }
+  },
+  "regression": {
+    "paths": ["src/tests/features/**/*.feature"],
+    "require": ["dotenv/config", "src/tests/step-definitions/**/*.ts"],
+    "requireModule": ["tsconfig-paths/register", "ts-node/register"],
+    "tags": "@regression",
+    "format": [
+      "progress",
+      "html:target/reports/regression-report.html",
+      "allure-cucumberjs/reporter"
+    ],
+    "formatOptions": {
+      "resultsDir": "target/allure-results"
+    }
+  },
+  "debug": {
+    "paths": ["src/tests/features/**/*.feature"],
+    "require": ["dotenv/config", "src/tests/step-definitions/**/*.ts"],
+    "requireModule": ["tsconfig-paths/register", "ts-node/register"],
+    "format": ["summary"]
+  }
+}

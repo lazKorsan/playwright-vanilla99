@@ -1,0 +1,893 @@
+import {Locator, Page} from '@playwright/test';
+import {LoggerHelper} from "./LoggerHelper";
+
+// ============================================
+// CONFIGURATION
+// ============================================
+const CONFIG = {
+    DEFAULT_TIMEOUT: 30000,
+    SHORT_TIMEOUT: 5000,
+    HIGHLIGHT_DURATION: 300,
+    CHAR_DELAY: 50,
+    SCROLL_ATTEMPTS: 10,
+    SCROLL_AMOUNT: 300,
+    WAIT_AFTER_SEND: 300,
+};
+
+// ============================================
+// ANA CLASS
+// ============================================
+export class SendKeysUtils {
+    private page: Page;
+
+    constructor(page: Page) {
+        this.page = page;
+    }
+
+    // ============================================
+    // ANA METHODLAR (KULLANICIYA ÖZEL)
+    // ============================================
+
+    /**
+     * ⌨️ Elemente text gönderir (EN ÇOK KULLANILACAK METHOD)
+     * @param selector - CSS selector, text, xpath, id hepsi olabilir
+     * @param text - Gönderilecek metin
+     * @param options - Opsiyonel ayarlar
+     */
+    async sendKeys(selector: string, text: string, options?: SendKeysOptions): Promise<boolean> {
+        const opts = {...this.getDefaultOptions(), ...options};
+        this.log(`🔍 Elemente text gönderilmeye hazırlanıyor: "${selector}"`);
+
+        try {
+            // 1. Elementi bul
+            const element = this.page.locator(selector);
+
+            // 2. Görünür olmasını bekle
+            await this.waitForElement(element, opts);
+
+            // 3. Smart Scroll
+            await this.smartScroll(element, opts);
+
+            // 4. Smart Hover
+            await this.smartHover(element, opts);
+
+            // 5. Highlight
+            if (opts.highlight) {
+                await this.highlightElement(element);
+            }
+
+            // 6. Input alanını temizle
+            if (opts.clearBefore) {
+                await this.clearFieldWithFallback(element);
+            }
+
+            // 7. Text gönderme işlemini dene (8 aşamalı)
+            const sent = await this.performSendKeysWithFallback(element, text, opts);
+
+            // 8. Highlight'ı kaldır
+            /*
+             if (opts.highlight) {
+                 await this.unhighlightElement(element);
+             }
+             */
+
+            if (sent) {
+                this.log(`✅ TEXT GÖNDERİLDİ - '${text}'`);
+                await this.page.waitForTimeout(opts.waitAfterSend || CONFIG.WAIT_AFTER_SEND);
+
+                // 9. Doğrulama
+                if (opts.verify) {
+                    await this.verifyTextEntered(element, text);
+                }
+                return true;
+            } else {
+                this.log(`❌ TEXT GÖNDERİLEMEDİ - '${text}'`);
+                return false;
+            }
+
+        } catch (error: any) {
+            this.log(`❌ HATA: ${error.message}`);
+            return false;
+        }
+    }
+
+    /**
+     * ⌨️ By/Locator ile text gönderir
+     */
+    async sendKeysOnLocator(locator: Locator, text: string, options?: SendKeysOptions): Promise<boolean> {
+        const opts = {...this.getDefaultOptions(), ...options};
+
+        try {
+            await this.waitForElement(locator, opts);
+            await this.smartScroll(locator, opts);
+            await this.smartHover(locator, opts);
+
+            if (opts.highlight) {
+                await this.highlightElement(locator);
+            }
+
+            if (opts.clearBefore) {
+                await this.clearFieldWithFallback(locator);
+            }
+
+            const sent = await this.performSendKeysWithFallback(locator, text, opts);
+
+            /*
+             if (opts.highlight) {
+                 await this.unhighlightElement(locator);
+             }
+             */
+
+            if (sent) {
+                this.log(`✅ TEXT GÖNDERİLDİ - '${text}'`);
+                if (opts.verify) {
+                    await this.verifyTextEntered(locator, text);
+                }
+                return true;
+            }
+            return false;
+        } catch (error: any) {
+            this.log(`❌ HATA: ${error.message}`);
+            return false;
+        }
+    }
+
+    /**
+     * ⌨️ XPath ile text gönderir
+     */
+    async sendByXpath(xpath: string, text: string, options?: SendKeysOptions): Promise<boolean> {
+        this.log(`📌 XPath ile text gönderiliyor: ${xpath}`);
+        return this.sendKeys(`xpath=${xpath}`, text, options);
+    }
+
+    /**
+     * ⌨️ Label veya placeholder metnine göre input alanını bulur ve text gönderir
+     */
+    async sendKeysByText(boxName: string, text: string, options?: SendKeysOptions): Promise<boolean> {
+        const opts = {...this.getDefaultOptions(), ...options};
+        const timeout = opts.timeout ?? CONFIG.DEFAULT_TIMEOUT;
+
+        this.log(`⌨️ '${boxName}' isimli kutuya çok ihtimalli metin gönderiliyor: ${text}`);
+
+        const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const safe = esc(boxName);
+        const nameRegex = new RegExp(boxName, 'i');
+
+        const strategies: Array<() => Locator> = [
+            () => this.page.getByLabel(boxName, {exact: true}),
+            () => this.page.getByPlaceholder(boxName, {exact: true}),
+            () => this.page.getByRole('textbox', {name: boxName, exact: true}),
+            () => this.page.getByRole('searchbox', {name: boxName, exact: true}),
+            () => this.page.getByRole('combobox', {name: boxName, exact: true}),
+            () => this.page.getByRole('spinbutton', {name: boxName, exact: true}),
+            () => this.page.getByTitle(boxName, {exact: true}),
+            () => this.page.locator(
+                `[data-testid="${safe}"], [aria-label="${safe}" i], [name="${safe}" i], [id="${safe}" i]`
+            ),
+            () => this.page.getByLabel(nameRegex),
+            () => this.page.getByPlaceholder(nameRegex),
+            () => this.page.getByRole('textbox', {name: nameRegex}),
+            () => this.page.locator(`label:has-text("${boxName}") + input, label:has-text("${boxName}") + textarea`),
+            () => this.page.locator(`label:has-text("${boxName}") input, label:has-text("${boxName}") textarea`),
+            () => this.page.locator(
+                `[contenteditable="true"][aria-label*="${boxName}" i], [contenteditable="true"][data-placeholder*="${boxName}" i]`
+            ),
+            () => this.page.locator(
+                `//input[contains(@name,'${boxName}') or contains(@id,'${boxName}') or contains(@placeholder,'${boxName}') or contains(@aria-label,'${boxName}')]` +
+                ` | //textarea[contains(@name,'${boxName}') or contains(@id,'${boxName}') or contains(@placeholder,'${boxName}') or contains(@aria-label,'${boxName}')]` +
+                ` | //*[@contenteditable='true'][contains(@aria-label,'${boxName}')]`
+            ),
+        ];
+
+        for (const [i, makeLocator] of strategies.entries()) {
+            try {
+                const locator = makeLocator().first();
+
+                if (!(await locator.isVisible({timeout}).catch(() => false))) {
+                    continue;
+                }
+
+                await this.smartScroll(locator, opts);
+                await this.smartHover(locator, opts);
+
+                if (opts.highlight) {
+                    await this.highlightElement(locator);
+                }
+
+                // ✅ DÜZELTİLDİ: sadece ClickOptions alanları
+                await locator.click({timeout}).catch(() => {
+                });
+                await locator.focus({timeout}).catch(() => {
+                });
+
+                if (opts.clearBefore) {
+                    await this.clearFieldWithFallback(locator);
+                }
+
+                const shouldType = opts.useTyping || (opts.charDelay ?? 0) > 0;
+                if (shouldType) {
+                    await locator.pressSequentially(text, {delay: opts.charDelay ?? 0, timeout});
+                } else {
+                    await locator.fill(text, {timeout});
+                }
+
+                if (opts.submitAfter) {
+                    await locator.press('Enter').catch(() => {
+                    });
+                }
+
+                if (opts.verify) {
+                    await this.verifyTextEntered(locator, text);
+                }
+
+                await this.page.waitForTimeout(opts.waitAfterSend ?? CONFIG.WAIT_AFTER_SEND);
+
+                this.log(`✅ [BAŞARILI] '${boxName}' alanına "${text}" yazıldı (strateji #${i + 1}).`);
+                return true;
+            } catch (err: any) {
+                this.log(`   ✗ Strateji #${i + 1} başarısız: ${err.message?.substring(0, 60)}`);
+            }
+        }
+
+        this.log(`❌ '${boxName}' yazma alanı hiçbir strateji ile bulunamadı.`);
+        return false;
+    }
+
+    /**
+     * ⌨️ Input alanına text ekler (temizlemeden)
+     */
+    async appendToElement(selector: string, text: string, options?: SendKeysOptions): Promise<boolean> {
+        const opts = {...this.getDefaultOptions(), ...options, clearBefore: false};
+        this.log(`➕ Text ekleniyor: '${text}'`);
+        return this.sendKeys(selector, text, opts);
+    }
+
+    // ============================================
+    // TEMİZLEME METHODLARI
+    // ============================================
+
+    /**
+     * 🧹 Input alanını temizle (4 aşamalı)
+     */
+    async clearField(selector: string): Promise<boolean> {
+        this.log(`🧹 Input alanı temizleniyor: "${selector}"`);
+
+        try {
+            const element = this.page.locator(selector);
+            const result = await this.clearFieldWithFallback(element);
+            if (result) {
+                this.log(`✅ Input alanı temizlendi`);
+            } else {
+                this.log(`❌ Input alanı temizlenemedi`);
+            }
+            return result;
+        } catch (error: any) {
+            this.log(`❌ HATA: ${error.message}`);
+            return false;
+        }
+    }
+
+    /**
+     * 🧹 Input alanını temizle (Locator ile)
+     */
+    async clearFieldOnLocator(locator: Locator): Promise<boolean> {
+        return this.clearFieldWithFallback(locator);
+    }
+
+    // ============================================
+    // SMART SCROLL METHODLARI
+    // ============================================
+
+    /**
+     * 📜 Akıllı Scroll - Element görünürdeyse scroll yapmaz
+     */
+    private async smartScroll(locator: Locator, options: SendKeysOptions): Promise<void> {
+        if (options.skipScroll) return;
+
+        try {
+            const isVisible = await locator.isVisible();
+            if (isVisible) {
+                this.log(`   ✓ Element zaten görünür, scroll yapılmadı`);
+                return;
+            }
+
+            this.log(`   📜 Element görünür değil, smart scroll yapılıyor...`);
+            await locator.scrollIntoViewIfNeeded();
+            await this.page.waitForTimeout(300);
+
+            // Hala görünür değilse alternatif dene
+            const stillNotVisible = !(await locator.isVisible());
+            if (stillNotVisible) {
+                await this.tryAlternativeScroll(locator);
+            }
+
+        } catch (error: any) {
+            this.log(`   ⚠️ Smart scroll başarısız: ${error.message}`);
+            await this.tryAlternativeScroll(locator);
+        }
+    }
+
+    private async tryAlternativeScroll(locator: Locator): Promise<void> {
+        try {
+            const selector = await this.getSelectorFromLocator(locator);
+            await this.page.evaluate((sel) => {
+                const el = document.querySelector(sel);
+                if (el) {
+                    el.scrollIntoView({behavior: 'smooth', block: 'center'});
+                }
+            }, selector);
+            await this.page.waitForTimeout(500);
+            this.log(`   ✓ Alternatif scroll başarılı`);
+        } catch (error: any) {
+            this.log(`   ✗ Alternatif scroll başarısız: ${error.message}`);
+        }
+    }
+
+    // ============================================
+    // SMART HOVER METHODLARI
+    // ============================================
+
+    /**
+     * 🖱️ Akıllı Hover - Element üzerine gel
+     */
+    private async smartHover(locator: Locator, options: SendKeysOptions): Promise<void> {
+        if (options.skipHover) return;
+
+        try {
+            this.log(`   🖱️ Element üzerine hover yapılıyor...`);
+            await locator.hover();
+            await this.page.waitForTimeout(300);
+            this.log(`   ✓ Hover başarılı`);
+        } catch (error: any) {
+            this.log(`   ⚠️ Hover başarısız: ${error.message}`);
+            await this.tryAlternativeHover(locator);
+        }
+    }
+
+    private async tryAlternativeHover(locator: Locator): Promise<void> {
+        try {
+            const selector = await this.getSelectorFromLocator(locator);
+            await this.page.evaluate((sel) => {
+                const el = document.querySelector(sel);
+                if (el) {
+                    const event = new MouseEvent('mouseover', {
+                        view: window,
+                        bubbles: true,
+                        cancelable: true
+                    });
+                    el.dispatchEvent(event);
+                }
+            }, selector);
+            await this.page.waitForTimeout(300);
+            this.log(`   ✓ JavaScript mouseover başarılı`);
+        } catch (error: any) {
+            this.log(`   ✗ Alternatif hover başarısız: ${error.message}`);
+        }
+    }
+
+    // ============================================
+    // TEMİZLEME METHODLARI (4 AŞAMALI)
+    // ============================================
+
+    private async clearFieldWithFallback(locator: Locator): Promise<boolean> {
+        this.log(`   🧹 Input alanı temizleniyor...`);
+        const selector = await this.getSelectorFromLocator(locator);
+
+        // METHOD 1: Normal clear
+        try {
+            await locator.clear();
+            this.log(`   ✓ Normal clear başarılı`);
+            return true;
+        } catch (error: any) {
+            this.log(`   ✗ Normal clear başarısız: ${error.message}`);
+        }
+
+        // METHOD 2: CTRL+A + DELETE
+        try {
+            await locator.press('Control+a');
+            await locator.press('Delete');
+            this.log(`   ✓ CTRL+A + DELETE ile temizleme başarılı`);
+            return true;
+        } catch (error: any) {
+            this.log(`   ✗ CTRL+A + DELETE başarısız: ${error.message}`);
+        }
+
+        // METHOD 3: JavaScript ile temizleme
+        try {
+            await this.page.evaluate((sel) => {
+                const el = document.querySelector(sel) as HTMLInputElement;
+                if (el) {
+                    el.value = '';
+                    el.dispatchEvent(new Event('input', {bubbles: true}));
+                    el.dispatchEvent(new Event('change', {bubbles: true}));
+                }
+            }, selector);
+            this.log(`   ✓ JavaScript ile temizleme başarılı`);
+            return true;
+        } catch (error: any) {
+            this.log(`   ✗ JavaScript temizleme başarısız: ${error.message}`);
+        }
+
+        // METHOD 4: Backspace ile temizleme
+        try {
+            const value = await locator.inputValue();
+            if (value && value.length > 0) {
+                for (let i = 0; i < value.length; i++) {
+                    await locator.press('Backspace');
+                }
+                this.log(`   ✓ Backspace ile temizleme başarılı`);
+                return true;
+            }
+        } catch (error: any) {
+            this.log(`   ✗ Backspace temizleme başarısız: ${error.message}`);
+        }
+
+        return false;
+    }
+
+    // ============================================
+    // TEXT GÖNDERME METHODLARI (8 AŞAMALI)
+    // ============================================
+
+    private async performSendKeysWithFallback(
+        locator: Locator,
+        text: string,
+        options: SendKeysOptions
+    ): Promise<boolean> {
+        const selector = await this.getSelectorFromLocator(locator);
+
+        const methods = [
+            {
+                name: 'Normal sendKeys',
+                fn: () => locator.fill(text, {timeout: options.timeout})
+            },
+            {
+                name: 'Type (char by char)',
+                fn: () => locator.type(text, {delay: options.charDelay || CONFIG.CHAR_DELAY})
+            },
+            {
+                name: 'Press Sequentially',
+                fn: async () => {
+                    for (const char of text) {
+                        await locator.press(char);
+                    }
+                    return true;
+                }
+            },
+            {
+                name: 'JavaScript value atama',
+                fn: () => this.page.evaluate(([sel, value]) => {
+                    const el = document.querySelector(sel) as HTMLInputElement;
+                    if (el) {
+                        el.value = value;
+                        el.dispatchEvent(new Event('input', {bubbles: true}));
+                        el.dispatchEvent(new Event('change', {bubbles: true}));
+                        return true;
+                    }
+                    return false;
+                }, [selector, text])
+            },
+            {
+                name: 'Click + fill',
+                fn: async () => {
+                    await locator.click({force: true});
+                    await this.page.waitForTimeout(200);
+                    return locator.fill(text);
+                }
+            },
+            {
+                name: 'Focus + fill',
+                fn: async () => {
+                    await locator.focus();
+                    await this.page.waitForTimeout(200);
+                    return locator.fill(text);
+                }
+            },
+            {
+                name: 'Scroll + fill',
+                fn: async () => {
+                    await locator.scrollIntoViewIfNeeded();
+                    await this.page.waitForTimeout(300);
+                    return locator.fill(text);
+                }
+            },
+            {
+                name: 'Paste ile yapıştırma',
+                fn: async () => {
+                    await this.page.evaluate(([sel, value]) => {
+                        const el = document.querySelector(sel) as HTMLInputElement;
+                        if (el) {
+                            el.focus();
+                            el.value = value;
+                            el.dispatchEvent(new Event('input', {bubbles: true}));
+                            el.dispatchEvent(new Event('change', {bubbles: true}));
+                        }
+                    }, [selector, text]);
+                    await locator.press('Control+V');
+                    return true;
+                }
+            }
+        ];
+
+        for (const method of methods) {
+            try {
+                this.log(`   [${methods.indexOf(method) + 1}/${methods.length}] ${method.name} deneniyor...`);
+                const result = await method.fn();
+                if (result !== false) {
+                    this.log(`   ✓ ${method.name} başarılı`);
+                    return true;
+                }
+            } catch (error: any) {
+                this.log(`   ✗ ${method.name} başarısız: ${error.message?.substring(0, 50)}`);
+            }
+        }
+
+        return false;
+    }
+
+    // ============================================
+    // DOĞRULAMA METHODLARI
+    // ============================================
+
+    /**
+     * ✅ Text'in gerçekten elemente yazıldığını doğrular
+     */
+    async verifyTextEntered(locator: Locator, expectedText: string): Promise<boolean> {
+        try {
+            const actualText = await this.getElementValue(locator);
+
+            if (expectedText === actualText) {
+                this.log(`   ✓ Text doğrulaması başarılı: '${actualText}'`);
+                return true;
+            } else {
+                this.log(`   ⚠️ Text doğrulaması: Beklenen='${expectedText}', Gerçekleşen='${actualText}'`);
+                return false;
+            }
+        } catch (error: any) {
+            this.log(`   ⚠️ Text doğrulaması yapılamadı: ${error.message}`);
+            return false;
+        }
+    }
+
+    /**
+     * 📝 Elementin değerini alır
+     */
+    async getElementValue(locator: Locator): Promise<string> {
+        try {
+            const selector = await this.getSelectorFromLocator(locator);
+            // Önce inputValue dene
+            let value = await locator.inputValue().catch(() => '');
+
+            if (!value) {
+                // Text content dene
+                value = await locator.textContent().catch(() => '') || '';
+            }
+
+            if (!value) {
+                // JavaScript ile dene
+                value = await this.page.evaluate((sel) => {
+                    const el = document.querySelector(sel) as HTMLInputElement;
+                    return el ? el.value || el.textContent || '' : '';
+                }, selector);
+            }
+
+            return value || '';
+        } catch (error: any) {
+            return '';
+        }
+    }
+
+    /**
+     * 📝 Elementin değerini alır (selector ile)
+     */
+    async getElementValueBySelector(selector: string): Promise<string> {
+        return this.getElementValue(this.page.locator(selector));
+    }
+
+    // ============================================
+    // HIGHLIGHT METHODLARI
+    // ============================================
+
+    private async highlightElement(locator: Locator): Promise<void> {
+        try {
+            await locator.evaluate((el, duration) => {
+                // Orijinal stili sakla
+                const originalStyle = el.getAttribute('style');
+
+                // Input/Textarea ise mavi, değilse turuncu highlight
+                const tagName = el.tagName.toLowerCase();
+                const highlightColor = tagName === 'input' || tagName === 'textarea'
+                    ? 'border: 3px solid #4A90D9 !important; background-color: #D6EAF8 !important; box-shadow: 0 0 15px rgba(74, 144, 217, 0.5) !important; transition: all 0.2s !important;'
+                    : 'border: 3px solid #F39C12 !important; background-color: #FDEBD0 !important; box-shadow: 0 0 15px rgba(243, 156, 18, 0.5) !important; transition: all 0.2s !important;';
+
+                el.setAttribute('style', highlightColor);
+
+                // Süre bitince kendi kendine eski haline döndür
+                setTimeout(() => {
+                    if (originalStyle !== null) {
+                        el.setAttribute('style', originalStyle);
+                    } else {
+                        el.removeAttribute('style');
+                    }
+                }, duration);
+
+            }, CONFIG.HIGHLIGHT_DURATION);
+
+            // Elementin o an ekranda parladığını görmek için çok kısa bekle (isteğe bağlı)
+            await this.page.waitForTimeout(100);
+        } catch (error: any) {
+            // Silent fail
+        }
+    }
+
+    static async sendKeysByText(
+        page: Page,
+        boxName: string,
+        text: string,
+        options?: SendKeysOptions): Promise<boolean> {
+        //this.log(`⌨️ '${boxName}' isimli kutuya metin gönderiliyor: ${text}`);
+        LoggerHelper.logInfo(`⌨️ '${boxName}' isimli kutuya metin gönderiliyor: ${text}`)
+
+        try {
+            const timeout = options?.timeout ?? 5000;
+            const nameRegex = new RegExp(boxName, 'i');
+
+            // Playwright'ın dahili erişilebilirlik ve standart attribute arama stratejileri
+            const combinedLocator = page.getByRole('textbox', {name: nameRegex})
+                .or(page.getByLabel(nameRegex))
+                .or(page.getByPlaceholder(nameRegex))
+                .or(page.locator(`input[name="${boxName}"], textarea[name="${boxName}"]`))
+                .or(page.locator(`input[id="${boxName}"], textarea[id="${boxName}"]`));
+
+            // İlk görünür ve etkileşime girilebilir olanı bekle ve yaz
+            const targetInput = combinedLocator.first();
+
+            // Auto-waiting sayesinde element görünene kadar bekler
+            await targetInput.fill(text, {timeout});
+
+            // this.log(`✅ '${boxName}' isimli kutuya başarıyla metin yazıldı.`);
+            LoggerHelper.logInfo(`✅ '${boxName}' isimli kutuya başarıyla metin yazıldı.`);
+            return true;
+
+        } catch (error) {
+            //this.log(`❌ '${boxName}' isimli kutu bulunamadı veya etkileşime girilemedi. Hata: ${error}`);
+            LoggerHelper.logError(`❌ '${boxName}' isimli kutu bulunamadı veya etkileşime girilemedi. Hata: ${error}`);
+            return false;
+        }
+    }
+
+    private async unhighlightElement(locator: Locator): Promise<void> {
+        try {
+            const selector = await this.getSelectorFromLocator(locator);
+            await this.page.evaluate((sel) => {
+                const el = document.querySelector(sel);
+                if (el) {
+                    // @ts-ignore
+                    const originalStyle = el._originalStyle;
+                    if (originalStyle !== undefined) {
+                        el.setAttribute('style', originalStyle);
+                    } else {
+                        el.removeAttribute('style');
+                    }
+                }
+            }, selector);
+        } catch (error: any) {
+            // Silent fail
+        }
+    }
+
+    // ============================================
+    // KEYBOARD METHODLARI
+    // ============================================
+
+    /**
+     * ⏎ Enter tuşuna basar
+     */
+    async pressEnter(selector: string): Promise<void> {
+        try {
+            await this.page.locator(selector).press('Enter');
+            this.log(`⏎ ENTER tuşuna basıldı: "${selector}"`);
+        } catch (error: any) {
+            this.log(`❌ ENTER basılamadı: ${error.message}`);
+        }
+    }
+
+    /**
+     * ⇆ Tab tuşuna basar
+     */
+    async pressTab(selector: string): Promise<void> {
+        try {
+            await this.page.locator(selector).press('Tab');
+            this.log(`⇆ TAB tuşuna basıldı: "${selector}"`);
+        } catch (error: any) {
+            this.log(`❌ TAB basılamadı: ${error.message}`);
+        }
+    }
+
+    /**
+     * ⬇️ Arrow Down tuşuna basar
+     */
+    async pressArrowDown(selector: string): Promise<void> {
+        try {
+            await this.page.locator(selector).press('ArrowDown');
+            this.log(`⬇️ ARROW_DOWN tuşuna basıldı: "${selector}"`);
+        } catch (error: any) {
+            this.log(`❌ ARROW_DOWN basılamadı: ${error.message}`);
+        }
+    }
+
+    /**
+     * ⬆️ Arrow Up tuşuna basar
+     */
+    async pressArrowUp(selector: string): Promise<void> {
+        try {
+            await this.page.locator(selector).press('ArrowUp');
+            this.log(`⬆️ ARROW_UP tuşuna basıldı: "${selector}"`);
+        } catch (error: any) {
+            this.log(`❌ ARROW_UP basılamadı: ${error.message}`);
+        }
+    }
+
+    /**
+     * ⎋ Escape tuşuna basar
+     */
+    async pressEscape(selector: string): Promise<void> {
+        try {
+            await this.page.locator(selector).press('Escape');
+            this.log(`⎋ ESCAPE tuşuna basıldı: "${selector}"`);
+        } catch (error: any) {
+            this.log(`❌ ESCAPE basılamadı: ${error.message}`);
+        }
+    }
+
+    // ============================================
+    // WAIT METHODLARI
+    // ============================================
+
+    private async waitForElement(locator: Locator, options: SendKeysOptions): Promise<void> {
+        try {
+            await locator.waitFor({state: 'visible', timeout: options.timeout});
+            this.log(`   ✅ Element görünür hale geldi`);
+        } catch (error: any) {
+            this.log(`   ⚠️ Element görünür değil, force ile devam...`);
+        }
+    }
+
+    /**
+     * ⏳ Sayfanın tamamen yüklenmesini bekle
+     */
+    async waitForPageLoad(): Promise<void> {
+        try {
+            await this.page.waitForLoadState('networkidle', {timeout: CONFIG.DEFAULT_TIMEOUT});
+            this.log(`📄 Sayfa tamamen yüklendi`);
+        } catch (error: any) {
+            this.log(`⚠️ Sayfa yüklenme beklemesi başarısız: ${error.message}`);
+        }
+    }
+
+    static async sendKeys(page: Page, selector: string, text: string, options?: SendKeysOptions): Promise<boolean> {
+        const instance = new SendKeysUtils(page);
+        return instance.sendKeys(selector, text, options);
+    }
+
+    static async sendKeysOnLocator(page: Page, locator: Locator, text: string, options?: SendKeysOptions): Promise<boolean> {
+        const instance = new SendKeysUtils(page);
+        return instance.sendKeysOnLocator(locator, text, options);
+    }
+
+    /**
+     * 🧠 Akıllı Yazma (Java'daki smartSendKeys'in Playwright Versiyonu)
+     *
+     * Önce Page Object'in kendi içindeki element bulma metodunu (örn: LoginPage.getInputByName) dener.
+     * Eğer o element listede yoksa veya hata verirse, doğrudan name attribute ile aramaya düşer.
+     *
+     * @param elementName - Feature dosyasından gelen input adı (örn: "username", "password")
+     * @param text - Yazılacak metin
+     * @param elementSupplier - Page objesinden elementi alan fonksiyon (örn: () => loginPage.getInputByName(elementName))
+     * @param options - Opsiyonel yazma ayarları
+     */
+    async smartSendKeys(
+        elementName: string,
+        text: string,
+        elementSupplier: () => Locator,
+        options?: SendKeysOptions
+    ): Promise<boolean> {
+
+        // 1. AŞAMA: Enum/Page Object listesinden bulmayı dene
+        try {
+            const locator = elementSupplier();
+            if (locator) {
+                this.log(`🎯 Element listede (Page/Enum) tanımlı bulundu: "${elementName}"`);
+                return await this.sendKeysOnLocator(locator, text, options);
+            }
+        } catch (error: any) {
+            this.log(`⚠️ Element listede bulunamadı veya hata oluştu: ${error.message?.substring(0, 100)}`);
+            this.log(`🔍 Fallback: Doğrudan name attribute'u ile aranıyor...`);
+        }
+
+        // 2. AŞAMA: Listede yoksa name attribute ile aramaya düş (Fallback)
+        // Önce [name="..."] dene, yoksa placeholder ile dene
+        const nameLocator = this.page.locator(`[name="${elementName}"]`);
+        if (await nameLocator.count() > 0) {
+            this.log(`   ✓ Fallback başarılı: "${elementName}" name attribute'u ile bulundu.`);
+            return await this.sendKeysOnLocator(nameLocator, text, options);
+        }
+
+        const placeholderLocator = this.page.locator(`[placeholder="${elementName}"]`);
+        if (await placeholderLocator.count() > 0) {
+            this.log(`   ✓ Fallback başarılı: "${elementName}" placeholder ile bulundu.`);
+            return await this.sendKeysOnLocator(placeholderLocator, text, options);
+        }
+
+        this.log(`❌ Fallback da başarısız: "${elementName}" hiçbir şekilde bulunamadı.`);
+        return false;
+    }
+
+    static async smartSendKeys(
+        page: Page,
+        elementName: string,
+        text: string,
+        elementSupplier: () => Locator,
+        options?: SendKeysOptions
+    ): Promise<boolean> {
+        const instance = new SendKeysUtils(page);
+        return instance.smartSendKeys(elementName, text, elementSupplier, options);
+    }
+
+
+    // ============================================
+    // YARDIMCI METHODLAR
+    // ============================================
+
+    private getDefaultOptions(): SendKeysOptions {
+        return {
+            timeout: CONFIG.DEFAULT_TIMEOUT,
+            highlight: true,
+            clearBefore: true,
+            skipScroll: false,
+            skipHover: false,
+            verify: true,
+            waitAfterSend: CONFIG.WAIT_AFTER_SEND,
+            charDelay: CONFIG.CHAR_DELAY,
+        };
+    }
+
+    private async getSelectorFromLocator(locator: Locator): Promise<string> {
+        try {
+            const str = locator.toString();
+            const match = str.match(/"([^"]+)"/);
+            return match ? match[1] : 'body';
+        } catch {
+            return 'body';
+        }
+    }
+
+    private log(message: string): void {
+        console.log(`[SendKeysUtils] ${message}`);
+    }
+}
+
+// ============================================
+// TYPES
+// ============================================
+export interface SendKeysOptions {
+    timeout?: number;
+    highlight?: boolean;
+    clearBefore?: boolean;
+    skipScroll?: boolean;
+    skipHover?: boolean;
+    verify?: boolean;
+    waitAfterSend?: number;
+    charDelay?: number;
+    // 🆕 Yeni eklenenler
+    submitAfter?: boolean;   // yazdıktan sonra Enter'a bas (default: false)
+    useTyping?: boolean;     // fill yerine pressSequentially (default: false, ama charDelay>0 ise otomatik true)
+
+}
+
+// ============================================
+// HOOKS - Kolay kullanım için
+// ============================================
+export async function createSendKeysUtils(page: Page): Promise<SendKeysUtils> {
+    return new SendKeysUtils(page);
+}
