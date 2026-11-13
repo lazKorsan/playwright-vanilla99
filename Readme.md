@@ -3,7 +3,8 @@ proje yapisini vern komut
 npx tree-node-cli -I "node_modules|.git|playwright-report|test-results" -o proje-yapisi.txt
 npx tree-node-cli -I "node_modules|dist|.git|playwright-report|test-results" -o proje-yapisi.txt
 PS C:\Users\user\WebstormProjects\playwright-vanilla99> npx tree-node-cli -I "node_modules|dist|.git|playwright-report|test-results" -o proje-yapisi.txt
----
+
+'''
 playwright-vanilla99
 ├── Alumni
 │   ├── InstuLearn
@@ -101,7 +102,7 @@ playwright-vanilla99
 │   └── reports
 │       └── cucumber-report.html
 └── tsconfig.json
----
+'''
 
 
 
