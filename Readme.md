@@ -1,8 +1,4 @@
-#Proje yapısi
-proje yapisini vern komut
-npx tree-node-cli -I "node_modules|.git|playwright-report|test-results" -o proje-yapisi.txt
-npx tree-node-cli -I "node_modules|dist|.git|playwright-report|test-results" -o proje-yapisi.txt
-PS C:\Users\user\WebstormProjects\playwright-vanilla99> npx tree-node-cli -I "node_modules|dist|.git|playwright-report|test-results" -o proje-yapisi.txt
+
 
 ## 📁 Proje Yapısı
 
@@ -84,6 +80,12 @@ playwright-vanilla99
 ```
 
 ---
+
+#Proje yapısini veren komut
+proje yapisini vern komut
+npx tree-node-cli -I "node_modules|.git|playwright-report|test-results" -o proje-yapisi.txt
+npx tree-node-cli -I "node_modules|dist|.git|playwright-report|test-results" -o proje-yapisi.txt
+PS C:\Users\user\WebstormProjects\playwright-vanilla99> npx tree-node-cli -I "node_modules|dist|.git|playwright-report|test-results" -o proje-yapisi.txt
 
 
 
